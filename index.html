@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>波的叠加和干涉</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f0f2f5;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 12px;
+      color: #2c3e50;
+    }
+
+    .intro {
+      font-size: 1rem;
+      color: #555;
+      margin-bottom: 24px;
+    }
+
+    @media (min-width: 992px) {
+      .main-content {
+        display: flex;
+        gap: 24px;
+      }
+
+      .controllers {
+        flex: 4;
+      }
+
+      .chart-container {
+        flex: 8;
+      }
+    }
+
+    .controller-card {
+      background: #f8fafc;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 12px 16px;
+      background: #eef2f7;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: bold;
+    }
+
+    .slider-group {
+      padding: 16px;
+    }
+
+    .slider-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .slider-label {
+      flex: 1;
+      font-size: 0.95rem;
+    }
+
+    .slider-value {
+      width: 40px;
+      text-align: right;
+      font-size: 0.95rem;
+      color: #4a5568;
+    }
+
+    input[type="range"] {
+      flex: 2;
+      height: 6px;
+      border-radius: 3px;
+      background: #e2e8f0;
+      outline: none;
+    }
+
+    .control-buttons {
+      display: flex;
+      justify-content: space-around;
+      padding: 16px 0;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    button {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 6px;
+      background-color: #3498db;
+      color: white;
+      cursor: pointer;
+      font-size: 0.9rem;
+      min-width: 100px;
+    }
+
+    button:hover {
+      background-color: #2980b9;
+    }
+
+    canvas {
+      width: 100%;
+      min-height: 360px;
+      background: #f9fafb;
+      border-radius: 6px;
+      display: block;
+    }
+
+    .legend {
+      position: absolute;
+      top: 30px;
+      right: 30px;
+      background: rgba(255,255,255,0.85);
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 0.9rem;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      margin: 4px 0;
+    }
+
+    .color-box {
+      width: 16px;
+      height: 2px;
+      margin-right: 8px;
+    }
+
+    .placeholder-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #a0aec0;
+      font-style: italic;
+    }
+
+    .info-card p {
+      margin-bottom: 12px;
+    }
+
+    .info-card ul {
+      padding-left: 20px;
+      margin-bottom: 12px;
+    }
+
+    .info-card li {
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- 标题与简介 -->
+    <div class="card">
+      <h1>波的叠加和干涉</h1>
+      <p class="intro">
+        波的叠加是指当两个或多个波在同一介质中传播并相遇时，任一点的总位移等于各波单独存在时在该点引起的位移的矢量和。
+        干涉是波叠加的一种特殊情况，表现为某些区域振动加强（相长干涉），某些区域振动减弱（相消干涉）。
+        拖动滑块调节波参数，观察波形变化和干涉现象。
+      </p>
+    </div>
+
+    <!-- 交互主卡片 -->
+    <div class="card main-content">
+      <!-- 左侧控制器 -->
+      <div class="controllers">
+        <div class="controller-card">
+          <div class="card-header" onclick="toggleCard('wave1')">
+            <span>波1控制</span>
+            <span id="wave1-toggle">▼</span>
+          </div>
+          <div id="wave1-sliders" class="slider-group">
+            <div class="slider-item">
+              <label class="slider-label">振幅 A<sub>1</sub>:</label>
+              <input type="range" id="amp1" min="0" max="2" step="0.1" value="1.0" oninput="updateValueDisplay('amp1', 'amp1-val')" onchange="onParamChange()">
+              <span id="amp1-val" class="slider-value">1.0</span>
+            </div>
+            <div class="slider-item">
+              <label class="slider-label">频率 f<sub>1</sub> (Hz):</label>
+              <input type="range" id="freq1" min="0.2" max="5" step="0.1" value="1.0" oninput="updateValueDisplay('freq1', 'freq1-val')" onchange="onParamChange()">
+              <span id="freq1-val" class="slider-value">1.0</span>
+            </div>
+            <div class="slider-item">
+              <label class="slider-label">相位 φ<sub>1</sub> (°):</label>
+              <input type="range" id="phase1" min="0" max="360" step="1" value="0" oninput="updateValueDisplay('phase1', 'phase1-val')" onchange="onParamChange()">
+              <span id="phase1-val" class="slider-value">0</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="controller-card">
+          <div class="card-header" onclick="toggleCard('wave2')">
+            <span>波2控制</span>
+            <span id="wave2-toggle">▼</span>
+          </div>
+          <div id="wave2-sliders" class="slider-group">
+            <div class="slider-item">
+              <label class="slider-label">振幅 A<sub>2</sub>:</label>
+              <input type="range" id="amp2" min="0" max="2" step="0.1" value="1.0" oninput="updateValueDisplay('amp2', 'amp2-val')" onchange="onParamChange()">
+              <span id="amp2-val" class="slider-value">1.0</span>
+            </div>
+            <div class="slider-item">
+              <label class="slider-label">频率 f<sub>2</sub> (Hz):</label>
+              <input type="range" id="freq2" min="0.2" max="5" step="0.1" value="1.0" oninput="updateValueDisplay('freq2', 'freq2-val')" onchange="onParamChange()">
+              <span id="freq2-val" class="slider-value">1.0</span>
+            </div>
+            <div class="slider-item">
+              <label class="slider-label">相位 φ<sub>2</sub> (°):</label>
+              <input type="range" id="phase2" min="0" max="360" step="1" value="0" oninput="updateValueDisplay('phase2', 'phase2-val')" onchange="onParamChange()">
+              <span id="phase2-val" class="slider-value">0</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="control-buttons">
+          <button id="play-pause-btn" onclick="togglePlay()">播放</button>
+          <button onclick="resetAll()">重置</button>
+          <button onclick="applyPreset('inPhase')">同频同相</button>
+          <button onclick="applyPreset('outOfPhase')">同频反相</button>
+          <button onclick="applyPreset('differentFreq')">不同频率</button>
+          <button onclick="toggleGrid()" id="grid-btn">隐藏网格</button>
+        </div>
+      </div>
+
+      <!-- 右侧图表 -->
+      <div class="chart-container">
+        <div style="position: relative;">
+          <canvas id="waveCanvas"></canvas>
+          <div id="legend" class="legend">
+            <div class="legend-item">
+              <div class="color-box" style="background-color: blue;"></div>
+              <span>波1</span>
+            </div>
+            <div class="legend-item">
+              <div class="color-box" style="background-color: orange;"></div>
+              <span>波2</span>
+            </div>
+            <div class="legend-item">
+              <div class="color-box" style="background-color: green;"></div>
+              <span>合成波</span>
+            </div>
+          </div>
+          <div id="placeholder" class="placeholder-text">拖动滑块或点击播放开始观察吧</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 原理说明与提示 -->
+    <div class="card info-card">
+      <h2>原理与提示</h2>
+      <p><strong>相长干涉：</strong>当两列波的相位差为 0° 或 360° 的整数倍时，合成波的振幅达到最大值（A₁ + A₂），称为相长干涉。</p>
+      <p><strong>相消干涉：</strong>当两列波的相位差为 180° 或 180° 加上 360° 的整数倍时，合成波的振幅达到最小值（|A₁ - A₂|），称为相消干涉。</p>
+      <p><strong>拍频现象：</strong>当两列波频率相近但不相等时，合成波会出现周期性的振幅增强与减弱，这种现象称为拍。</p>
+      <ul>
+        <li>尝试将两波频率设为相同，相位差分别为0°和180°，观察相长与相消干涉。</li>
+        <li>设置不同的频率，观察拍频现象。</li>
+        <li>开启/关闭网格有助于观察波形特征。</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    // 状态管理
+    let state = {
+      isPlaying: false,
+      showGrid: true,
+      time: 0,
+      animationId: null,
+      params: {
+        amp1: 1.0,
+        freq1: 1.0,
+        phase1: 0,
+        amp2: 1.0,
+        freq2: 1.0,
+        phase2: 0
+      }
+    };
+
+    // DOM元素引用
+    const canvas = document.getElementById('waveCanvas');
+    const ctx = canvas.getContext('2d');
+    const placeholder = document.getElementById('placeholder');
+
+    // 初始化画布尺寸
+    function initCanvas() {
+      const container = canvas.parentElement;
+      canvas.width = container.clientWidth;
+      canvas.height = Math.max(360, container.clientHeight);
+    }
+
+    // 更新数值显示
+    function updateValueDisplay(sliderId, labelId) {
+      const slider = document.getElementById(sliderId);
+      const label = document.getElementById(labelId);
+      if (sliderId.includes('freq')) {
+        label.textContent = parseFloat(slider.value).toFixed(1);
+      } else if (sliderId.includes('amp')) {
+        label.textContent = parseFloat(slider.value).toFixed(1);
+      } else {
+        label.textContent = parseInt(slider.value);
+      }
+    }
+
+    // 切换控制器卡片展开/收起
+    function toggleCard(cardId) {
+      const sliders = document.getElementById(`${cardId}-sliders`);
+      const toggle = document.getElementById(`${cardId}-toggle`);
+      if (sliders.style.display === 'none') {
+        sliders.style.display = 'block';
+        toggle.textContent = '▼';
+      } else {
+        sliders.style.display = 'none';
+        toggle.textContent = '▶';
+      }
+    }
+
+    // 参数变更处理
+    function onParamChange() {
+      // 隐藏提示文字
+      placeholder.style.display = 'none';
+      // 如果正在播放，则继续；否则不启动动画
+      if (!state.isPlaying) {
+        drawWave();
+      }
+    }
+
+    // 绘制波形
+    function drawWave() {
+      const width = canvas.width;
+      const height = canvas.height;
+      
+      ctx.clearRect(0, 0, width, height);
+
+      // 计算最大振幅以确定Y轴范围
+      const maxAmp = state.params.amp1 + state.params.amp2;
+      if (maxAmp === 0) return;
+
+      // 绘制网格
+      if (state.showGrid) {
+        drawGrid(width, height);
+      }
+
+      // 设置X轴范围为0到6π
+      const xMax = 6 * Math.PI;
+      const dx = xMax / width; // 每像素对应的x值增量
+
+      // 计算中心线位置
+      const centerY = height / 2;
+
+      // 定义波函数 y = A * sin(k*x - 2π*f*t + φ)
+      // 这里k=1, 所以简化为 y = A * sin(x - 2π*f*t + φ)
+      const wave1Data = [];
+      const wave2Data = [];
+      const sumData = [];
+
+      for (let i = 0; i < width; i++) {
+        const x = i * dx;
+        const t = state.time;
+
+        const y1 = state.params.amp1 * Math.sin(x - 2 * Math.PI * state.params.freq1 * t + degToRad(state.params.phase1));
+        const y2 = state.params.amp2 * Math.sin(x - 2 * Math.PI * state.params.freq2 * t + degToRad(state.params.phase2));
+        const ySum = y1 + y2;
+
+        // 将y值映射到画布坐标系
+        const scaledY1 = centerY - (y1 / maxAmp) * (height * 0.4);
+        const scaledY2 = centerY - (y2 / maxAmp) * (height * 0.4);
+        const scaledYSum = centerY - (ySum / maxAmp) * (height * 0.4);
+
+        wave1Data.push({ x: i, y: scaledY1 });
+        wave2Data.push({ x: i, y: scaledY2 });
+        sumData.push({ x: i, y: scaledYSum });
+      }
+
+      // 绘制波1 (蓝色)
+      drawLine(wave1Data, 'blue');
+      // 绘制波2 (橙色)
+      drawLine(wave2Data, 'orange');
+      // 绘制合成波 (绿色)
+      drawLine(sumData, 'green');
+
+      // 绘制X轴
+      ctx.beginPath();
+      ctx.moveTo(0, centerY);
+      ctx.lineTo(width, centerY);
+      ctx.strokeStyle = '#ccc';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    // 绘制网格
+    function drawGrid(width, height) {
+      const step = 30; // 网格间距
+      ctx.strokeStyle = '#eaeaea';
+      ctx.lineWidth = 0.5;
+
+      // 垂直线
+      for (let x = 0; x <= width; x += step) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+      }
+
+      // 水平线
+      for (let y = 0; y <= height; y += step) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+      }
+    }
+
+    // 绘制线条
+    function drawLine(data, color) {
+      ctx.beginPath();
+      ctx.moveTo(data[0].x, data[0].y);
+      for (let i = 1; i < data.length; i++) {
+        ctx.lineTo(data[i].x, data[i].y);
+      }
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    // 角度转弧度
+    function degToRad(deg) {
+      return deg * Math.PI / 180;
+    }
+
+    // 动画循环
+    function animate() {
+      if (!state.isPlaying) return;
+      
+      state.time += 0.02; // 时间步进
+      drawWave();
+      state.animationId = requestAnimationFrame(animate);
+    }
+
+    // 播放/暂停控制
+    function togglePlay() {
+      const btn = document.getElementById('play-pause-btn');
+      state.isPlaying = !state.isPlaying;
+      
+      if (state.isPlaying) {
+        btn.textContent = '暂停';
+        animate();
+      } else {
+        btn.textContent = '播放';
+        if (state.animationId) {
+          cancelAnimationFrame(state.animationId);
+          state.animationId = null;
+        }
+      }
+      
+      // 隐藏提示文字
+      placeholder.style.display = 'none';
+    }
+
+    // 重置所有参数
+    function resetAll() {
+      // 暂停动画
+      if (state.isPlaying) {
+        togglePlay();
+      }
+      
+      // 重置时间
+      state.time = 0;
+      
+      // 重置参数
+      state.params = {
+        amp1: 1.0,
+        freq1: 1.0,
+        phase1: 0,
+        amp2: 1.0,
+        freq2: 1.0,
+        phase2: 0
+      };
+      
+      // 更新滑块和数值显示
+      document.getElementById('amp1').value = 1.0;
+      document.getElementById('freq1').value = 1.0;
+      document.getElementById('phase1').value = 0;
+      document.getElementById('amp2').value = 1.0;
+      document.getElementById('freq2').value = 1.0;
+      document.getElementById('phase2').value = 0;
+      
+      updateValueDisplay('amp1', 'amp1-val');
+      updateValueDisplay('freq1', 'freq1-val');
+      updateValueDisplay('phase1', 'phase1-val');
+      updateValueDisplay('amp2', 'amp2-val');
+      updateValueDisplay('freq2', 'freq2-val');
+      updateValueDisplay('phase2', 'phase2-val');
+      
+      drawWave();
+    }
+
+    // 应用预设
+    function applyPreset(type) {
+      switch(type) {
+        case 'inPhase':
+          state.params.freq1 = 1.0;
+          state.params.phase1 = 0;
+          state.params.freq2 = 1.0;
+          state.params.phase2 = 0;
+          break;
+        case 'outOfPhase':
+          state.params.freq1 = 1.0;
+          state.params.phase1 = 0;
+          state.params.freq2 = 1.0;
+          state.params.phase2 = 180;
+          break;
+        case 'differentFreq':
+          state.params.freq1 = 1.0;
+          state.params.phase1 = 0;
+          state.params.freq2 = 1.5;
+          state.params.phase2 = 0;
+          break;
+      }
+      
+      // 更新滑块和数值显示
+      document.getElementById('freq1').value = state.params.freq1;
+      document.getElementById('phase1').value = state.params.phase1;
+      document.getElementById('freq2').value = state.params.freq2;
+      document.getElementById('phase2').value = state.params.phase2;
+      
+      updateValueDisplay('freq1', 'freq1-val');
+      updateValueDisplay('phase1', 'phase1-val');
+      updateValueDisplay('freq2', 'freq2-val');
+      updateValueDisplay('phase2', 'phase2-val');
+      
+      // 隐藏提示文字并重新绘制
+      placeholder.style.display = 'none';
+      drawWave();
+    }
+
+    // 切换网格显示
+    function toggleGrid() {
+      state.showGrid = !state.showGrid;
+      const btn = document.getElementById('grid-btn');
+      btn.textContent = state.showGrid ? '隐藏网格' : '显示网格';
+      drawWave();
+    }
+
+    // 初始化
+    window.onload = function() {
+      initCanvas();
+      updateValueDisplay('amp1', 'amp1-val');
+      updateValueDisplay('freq1', 'freq1-val');
+      updateValueDisplay('phase1', 'phase1-val');
+      updateValueDisplay('amp2', 'amp2-val');
+      updateValueDisplay('freq2', 'freq2-val');
+      updateValueDisplay('phase2', 'phase2-val');
+      
+      // 默认收起控制器
+      document.getElementById('wave1-sliders').style.display = 'none';
+      document.getElementById('wave2-sliders').style.display = 'none';
+      document.getElementById('wave1-toggle').textContent = '▶';
+      document.getElementById('wave2-toggle').textContent = '▶';
+    };
+
+    // 响应窗口大小变化
+    window.onresize = function() {
+      initCanvas();
+      if (!state.isPlaying) {
+        drawWave();
+      }
+    };
+  </script>
+</body>
+</html>
